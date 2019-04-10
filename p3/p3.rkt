@@ -13,7 +13,7 @@
 
 (provide list-reverse 
          list-append 
-         zip-lists  	
+         zip-lists  
          slice-list 
          palindrome?  	
          )   	
@@ -67,9 +67,30 @@
 ; any number of lists together
 ;;; e.g., (zip-lists '(1) '(2 3 4) '(5 6)) => '((1 2 5)) 
 (define (zip-lists . args) 
-0
+  (cond [(empty? args) '()]
+        [(my-empty args) '()]
+        [else (helper args 0)]
+  ))
+
+(define (helper args n)
+  (cond [(= n (smallestlength args)) '()]
+        [(cons (map (lambda (x) (at x n)) args) (helper args (+ 1 n)))]
+  )
 )
- 
+
+(define (my-empty args)
+  (if (<= (length args) 1)
+    (or (empty? args) (empty? (first args)))
+    (or (empty? (first args)) (my-empty (rest args)))
+  )
+)
+
+(define (smallestlength args)
+  (cond [(empty? args) 0]
+        [(= 1 (length args)) (length (first args))]
+        [(min (length (first args)) (smallestlength (rest args)))]
+  )
+)
 
 ; Define a slice-list function that takes a list, start position, and  	
 ; end position to a list of elements between the given positions (inclusive)
@@ -78,13 +99,16 @@
 ;;; e.g., (slice-list '(1 2) 1 4) => '(2)  	
 ; if the range of the slice is empty/nonexistent, then the result should be '()
 (define (slice-list lst n m)
-  (if (and (= n m) (< m (length lst)))
-      (cons (at lst n) '())
-      (if (>= m (length lst))
-          (slice-list lst n (- (length lst) 1))
-          (list-append (cons (at lst n) '()) (slice-list lst (+ n 1) m))
-          )
+  (if (or (< n 0) (or (empty? lst) (> n m)))
+      '()
+      (if (and (= n m) (< m (length lst)))
+        (cons (at lst n) '())
+        (if (>= m (length lst))
+            (slice-list lst n (- (length lst) 1))
+            (list-append (cons (at lst n) '()) (slice-list lst (+ n 1) m))
+            )
       )
+  )
 )
 
 (define (at lst index)
@@ -97,5 +121,12 @@
 ; Define a palindrome? predicate that only returns true for strings that are palindromes
 ;;; e.g., (palindrome? "abcdcba") => #t  	
 (define (palindrome? s)  	
-
+  (equal? (string-reverse s) s)
   )  	
+
+(define (string-reverse s)
+  (if (<= (string-length s) 1)
+    s
+    (string-append (string-reverse (substring s 1)) (substring s 0 1))
+    )
+)

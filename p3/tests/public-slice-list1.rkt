@@ -7,3 +7,6 @@
     (exit 1))
 
 
+(if (equal? (slice-list '() 8 15) '())
+    (exit 0)
+    (exit 1))

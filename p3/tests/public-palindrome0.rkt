@@ -7,4 +7,7 @@
     (exit 1))
 
 
+(if (palindrome? "arbra")
+    (exit 0)
+    (exit 1))
 

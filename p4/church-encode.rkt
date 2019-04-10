@@ -100,7 +100,8 @@
           `(lambda (,x) ,(churchify e0))]   	
 
          [`(lambda (,x . ,rest) ,e0)  	
-          'TODO] 
+          `(lambda (,x) ,(churchify `(lambda ,rest ,e0)))
+          ] 
 
          ;; TODO: are there more match cases to add?  	
 
@@ -109,18 +110,17 @@
          
          ; Datums
          [(? natural? nat)   	
-          #;(define (wrap n)
+          (define (wrap n)
             (if (= 0 n) 'x
             `(f (wrap ,(- n 1)))))
-          ;(churchify `(lambda () (,(wrap nat))))
-          'TODO
+          (churchify `(lambda (f) (lambda (x) (,(wrap nat)))))
           ]   	
          [''() 
-          (lambda (x) (lambda (y) (y)))]
+          (churchify '(lambda (x) (lambda (y) (y))))]
          [#t   	
-          (lambda (a) (lambda (b) a))]  	
+          (churchify '(lambda (a b) (a)))]  	
          [#f 
-          (lambda (a) (lambda (b) b))]  	
+          (churchify '(lambda (a) (lambda (b) b)))]  	
 
          ; Untagged application (has to go last)	
          [`(,fun) 

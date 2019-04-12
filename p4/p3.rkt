@@ -65,7 +65,7 @@
 		[`(lambda (,y) ,body)
 			(if (equal? x y)
 				(let ([z (fresh-var (free-vars body))])
-					`(lambda (,z) ,(capture-avoiding-subset (capture-avoiding-subset body y z)
+					`(lambda (,x) ,(capture-avoiding-subset (capture-avoiding-subset body y x)
 					x
 					e1)))
 				`(lambda (,y) ,(capture-avoiding-subset body x e1)))]

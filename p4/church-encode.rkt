@@ -92,7 +92,9 @@
           ; to churchify should perform the needed currying.
           ; Watch out for forming infinite loops!  	
           (churchify `((lambda ,xs ,e1) . ,e0s))]   	
-
+        [`(letrec ([,f (lambda (,x ...) ,body)]) ,let-body)
+          (churchify `(let ([,f (Y-comb (lambda (,f) (lambda (,x) ,body)))]) ,let-body))
+        ]
          [`(lambda () ,e0)  	
           `(lambda (_) ,(churchify e0))] 
 
@@ -103,7 +105,19 @@
           `(lambda (,x) ,(churchify `(lambda ,rest ,e0)))
           ] 
 
-         ;; TODO: are there more match cases to add?  	
+         ;; TODO: are there more match cases to add?  
+         [`(,(? prim? prim) . ,args)
+          (churchify `(,(churchify-prim prim) . ,args))
+         ]	
+         
+         [ `(and ,e0 ,e1)
+          (churchify `(if ,e0 ,e1))
+         ]
+         
+         [`(if, e0 ,e1 ,e2)
+          ;(churchify `(,e0 (lambda () ,e1) (lambda () ,e2)))
+          (churchify `(,e0 ,(churchify e1) ,(churchify e2)))
+         ]
 
          ; Variables   	
          [(? symbol? x) x]  	
@@ -112,9 +126,10 @@
          [(? natural? nat)   	
           (define (wrap n)
             (if (= 0 n) 'x
-            `(f (wrap ,(- n 1)))))
-          (churchify `(lambda (f) (lambda (x) (,(wrap nat)))))
-          ]   	
+            `(f ,(wrap (- n 1)))))
+          (churchify `(lambda (f) (lambda (x) ,(wrap nat))))
+          ] 
+
          [''() 
           (churchify '(lambda (x) (lambda (y) (y))))]
          [#t   	
@@ -124,7 +139,8 @@
 
          ; Untagged application (has to go last)	
          [`(,fun) 
-          (churchify `(lambda (_) _))]  	
+          (churchify `(,fun (lambda (_) _)))]
+          ;`(,(churchify fun) (lambda (x) x))]  	
          
          [`(,fun ,arg)
          `(,(churchify fun) ,(churchify arg))]
@@ -138,22 +154,31 @@
 ;; as illustrated, but this also means testing at the REPL will be easier  	
 ;; by calling churchify directly and seeing that its output looks correct.   	
 (define (church-encode expr)
-  (define Y-comb 0)   	
+  (define Y-comb 
+    `((lambda (u) (u u)) (lambda (y) (lambda (f) (f (lambda (x) (((y y) f) x))))))
+  )   	
   (define church:null?  
     `(lambda (p) (p (lambda (a b) #f) (lambda () #t))))
   (define church:cons
-    `(lambda (when-cons) (lambda (when-null) (when-null))))
-  (define church:car 0)
-  (define church:cdr 0)
+    `(lambda (x y) (lambda (when-cons) (lambda (when-null) (when-cons x y)))))
+  (define church:car 
+    `(lambda (x) (x (lambda (a b) a) (lambda () (lambda (k) k)))))
+  (define church:cdr 
+    `(lambda (x) (x (lambda (a b) b) (lambda () (lambda (k) k)))))
   ; Because these are all passed through churchify, we do not need to curry
   (define church:add1 
-  `(lambda (n) (lambda (f) (lambda (x) (f ((n f) x))))))
-  (define church:zero? 0)
-  (define church:+ `(lambda (n) (lambda (m)
+    `(lambda (n) (lambda (f) (lambda (x) (f ((n f) x))))))
+  (define church:zero? 
+    `(lambda (x) ((x (lambda (y) #f)) #t))
+  )
+  (define church:+ 
+    `(lambda (n) (lambda (m)
               (lambda (f) (lambda (x)
               ((n f) ((m f) x)))))))
-  (define church:* `(lambda (a b) (lambda (f x) ((a (b f)) x))))
-  (define church:not 0)
+  (define church:* 
+    `(lambda (a b) (lambda (f x) ((a (b f)) x))))
+  (define church:not 
+    0)
   (churchify  	
    `(let ([Y-comb ,Y-comb]  	
           [church:null? ,church:null?] 
